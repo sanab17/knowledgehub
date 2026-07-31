@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Account | KnowledgeHub</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom Style Sheet -->
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+</head>
+<body class="d-flex align-items-center justify-content-center py-5" style="min-height: 100vh; background-color: var(--bg-primary);">
+
+    <div class="container animate-fade-in-up">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-5">
+                
+                <!-- Logo -->
+                <div class="text-center mb-4">
+                    <i class="fa-solid fa-cubes-stacked text-gradient fs-1 mb-2"></i>
+                    <h2 class="fw-bold text-white">Knowledge<span class="text-gradient">Hub</span></h2>
+                    <p class="text-secondary small">Register a New Employee or Administrator Profile</p>
+                </div>
+
+                <!-- Registration Error -->
+                <div th:if="${registrationError}" class="alert alert-danger glass-card border-danger text-danger p-3 mb-4 text-center" role="alert">
+                    <i class="fa-solid fa-circle-exclamation me-2"></i> <span th:text="${registrationError}">Error message here</span>
+                </div>
+
+                <!-- Register Card -->
+                <div class="glass-card p-4">
+                    <h4 class="fw-semibold text-white mb-3">Create Account</h4>
+                    
+                    <form th:action="@{/register}" th:object="${user}" method="post">
+                        <!-- Username -->
+                        <div class="mb-3">
+                            <label for="username" class="form-label text-secondary small fw-medium">Username</label>
+                            <input type="text" id="username" th:field="*{username}" class="form-control form-control-custom" placeholder="e.g. jdoe" required>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('username')}" th:errors="*{username}">Username error</div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label text-secondary small fw-medium">Email Address</label>
+                            <input type="email" id="email" th:field="*{email}" class="form-control form-control-custom" placeholder="jdoe@company.com" required>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">Email error</div>
+                        </div>
+
+                        <!-- Role Selection -->
+                        <div class="mb-3">
+                            <label for="role" class="form-label text-secondary small fw-medium">Access Role</label>
+                            <select id="role" th:field="*{role}" class="form-select form-select-custom" required>
+                                <option th:value="EMPLOYEE" th:text="'Employee (View & Upload Documents)'">Employee</option>
+                                <option th:value="ADMIN" th:text="'Administrator (Manage All Documents)'">Admin</option>
+                            </select>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('role')}" th:errors="*{role}">Role error</div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label for="password" class="form-label text-secondary small fw-medium">Password</label>
+                                <input type="password" id="password" th:field="*{password}" class="form-control form-control-custom" placeholder="Min 6 characters" required>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('password')}" th:errors="*{password}">Password error</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="confirmPassword" class="form-label text-secondary small fw-medium">Confirm Password</label>
+                                <input type="password" id="confirmPassword" th:field="*{confirmPassword}" class="form-control form-control-custom" placeholder="Repeat password" required>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}">Confirm Password error</div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn btn-primary-gradient w-100 mb-3">
+                            <i class="fa-solid fa-user-plus me-2"></i> Register Account
+                        </button>
+                    </form>
+
+                    <!-- Back to Login -->
+                    <div class="text-center mt-3">
+                        <span class="text-secondary small">Already have an account? </span>
+                        <a th:href="@{/login}" class="text-gradient fw-medium text-decoration-none small">Sign In</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

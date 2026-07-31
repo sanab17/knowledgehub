@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | KnowledgeHub</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom Style Sheet -->
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+</head>
+<body class="d-flex align-items-center justify-content-center py-5" style="min-height: 100vh; background-color: var(--bg-primary);">
+
+    <div class="container animate-fade-in-up">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                
+                <!-- Logo -->
+                <div class="text-center mb-4">
+                    <i class="fa-solid fa-cubes-stacked text-gradient fs-1 mb-2"></i>
+                    <h2 class="fw-bold text-white">Knowledge<span class="text-gradient">Hub</span></h2>
+                    <p class="text-secondary small">Secure Enterprise Document Portal</p>
+                </div>
+
+                <!-- Registration Alert -->
+                <div th:if="${param.registered}" class="alert alert-success glass-card border-success text-success p-3 mb-4 text-center" role="alert">
+                    <i class="fa-solid fa-circle-check me-2"></i> Account registered! Please log in.
+                </div>
+
+                <!-- Logout Alert -->
+                <div th:if="${param.logout}" class="alert alert-info glass-card border-info text-info p-3 mb-4 text-center" role="alert">
+                    <i class="fa-solid fa-circle-info me-2"></i> You have been logged out successfully.
+                </div>
+
+                <!-- Error Alert -->
+                <div th:if="${param.error}" class="alert alert-danger glass-card border-danger text-danger p-3 mb-4 text-center" role="alert">
+                    <i class="fa-solid fa-circle-exclamation me-2"></i> Invalid username or password.
+                </div>
+
+                <!-- Login Card -->
+                <div class="glass-card p-4">
+                    <h4 class="fw-semibold text-white mb-3">Sign In</h4>
+                    <form th:action="@{/login}" method="post">
+                        <!-- Username -->
+                        <div class="mb-3">
+                            <label for="username" class="form-label text-secondary small fw-medium">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent border-end-0 border-color" style="border-radius: 8px 0 0 8px;">
+                                    <i class="fa-solid fa-user text-secondary"></i>
+                                </span>
+                                <input type="text" id="username" name="username" class="form-control form-control-custom border-start-0" placeholder="Enter username" required autofocus style="border-radius: 0 8px 8px 0 !important;">
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between">
+                                <label for="password" class="form-label text-secondary small fw-medium">Password</label>
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent border-end-0 border-color" style="border-radius: 8px 0 0 8px;">
+                                    <i class="fa-solid fa-lock text-secondary"></i>
+                                </span>
+                                <input type="password" id="password" name="password" class="form-control form-control-custom border-start-0" placeholder="Enter password" required style="border-radius: 0 8px 8px 0 !important;">
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn btn-primary-gradient w-100 mb-3">
+                            <i class="fa-solid fa-right-to-bracket me-2"></i> Sign In
+                        </button>
+                    </form>
+
+                    <!-- Register Link -->
+                    <div class="text-center mt-3">
+                        <span class="text-secondary small">New employee? </span>
+                        <a th:href="@{/register}" class="text-gradient fw-medium text-decoration-none small">Create an account</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

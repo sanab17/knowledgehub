@@ -1,0 +1,225 @@
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::main})}">
+<main class="animate-fade-in-up">
+    <!-- Header -->
+    <div class="mb-4">
+        <h1 class="h2 fw-bold text-white mb-1">Upload New Document</h1>
+        <p class="text-secondary mb-0">Publish documents to the company knowledge base. Maximum size limit is 10 MB.</p>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 col-xl-7">
+            
+            <!-- Upload Error Alert -->
+            <div th:if="${uploadError}" class="alert alert-danger glass-card border-danger text-danger p-3 mb-4" role="alert">
+                <i class="fa-solid fa-circle-exclamation me-2"></i> <span th:text="${uploadError}">Server upload error</span>
+            </div>
+
+            <!-- Client-side Validation Alert (hidden initially) -->
+            <div id="clientErrorAlert" class="alert alert-danger glass-card border-danger text-danger p-3 mb-4 d-none" role="alert">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> <span id="clientErrorMessage">File error</span>
+            </div>
+
+            <div class="glass-card p-4">
+                <form id="documentUploadForm" th:action="@{/documents/upload}" th:object="${documentUploadDto}" method="post" enctype="multipart/form-data">
+                    
+                    <!-- Document Title -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label text-secondary small fw-medium">Document Title *</label>
+                        <input type="text" id="title" th:field="*{title}" class="form-control form-control-custom" placeholder="e.g. Employee Handbook 2026" required>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">Title error</div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label for="description" class="form-label text-secondary small fw-medium">Description</label>
+                        <textarea id="description" th:field="*{description}" class="form-control form-control-custom" rows="3" placeholder="Briefly describe the contents of this document..."></textarea>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">Description error</div>
+                    </div>
+
+                    <!-- Department -->
+                    <div class="mb-4">
+                        <label for="department" class="form-label text-secondary small fw-medium">Target Department *</label>
+                        <select id="department" th:field="*{department}" class="form-select form-select-custom" required>
+                            <option value="" disabled th:selected="${documentUploadDto.department == null}">Select Department</option>
+                            <option th:each="dept : ${departments}" 
+                                    th:value="${dept}" 
+                                    th:text="${dept.displayName}">Department</option>
+                        </select>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('department')}" th:errors="*{department}">Department error</div>
+                    </div>
+
+                    <!-- Drag and Drop File Input -->
+                    <div class="mb-4">
+                        <label class="form-label text-secondary small fw-medium">Document File * (PDF or DOCX)</label>
+                        
+                        <div id="dropzone" class="upload-dropzone">
+                            <i class="fa-solid fa-cloud-arrow-up text-gradient fs-1 mb-3"></i>
+                            <h5 class="text-white fw-semibold mb-1">Drag & Drop file here</h5>
+                            <p class="text-secondary small mb-3">or click to browse your local files</p>
+                            
+                            <!-- Hidden input element -->
+                            <input type="file" id="file" name="file" class="d-none" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
+                            
+                            <!-- File metadata preview -->
+                            <div id="filePreview" class="d-none mt-3 p-3 glass-card border-info d-flex align-items-center justify-content-between text-start animate-fade-in-up">
+                                <div class="d-flex align-items-center">
+                                    <i id="previewIcon" class="fa-solid fa-file fs-3 me-3 text-gradient"></i>
+                                    <div>
+                                        <span id="previewName" class="text-white fw-medium d-block text-truncate" style="max-width: 300px;">filename.pdf</span>
+                                        <span id="previewSize" class="text-secondary small">1.2 MB</span>
+                                    </div>
+                                </div>
+                                <button type="button" id="removeFileBtn" class="btn btn-sm btn-outline-custom text-danger border-0">
+                                    <i class="fa-solid fa-circle-xmark fs-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('file')}" th:errors="*{file}">File error</div>
+                    </div>
+
+                    <!-- Submit Actions -->
+                    <div class="d-flex gap-2 justify-content-end mt-4">
+                        <a th:href="@{/documents}" class="btn btn-outline-custom">Cancel</a>
+                        <button type="submit" class="btn btn-primary-gradient">
+                            <i class="fa-solid fa-cloud-arrow-up me-1"></i> Upload Document
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Upload Tips Panel -->
+        <div class="col-lg-4">
+            <div class="glass-card p-4">
+                <h4 class="fw-semibold text-white mb-3"><i class="fa-solid fa-circle-info me-2 text-gradient"></i>Uploading Guidelines</h4>
+                <ul class="text-secondary small ps-3 mb-0" style="line-height: 1.8;">
+                    <li class="mb-2"><strong>Allowed Formats:</strong> Ensure your document is a valid PDF (.pdf) or Microsoft Word document (.docx).</li>
+                    <li class="mb-2"><strong>Maximum Size:</strong> The total size of the file cannot exceed 10 megabytes.</li>
+                    <li class="mb-2"><strong>Departments:</strong> Select the correct target department to help team members find documents easily.</li>
+                    <li class="mb-2"><strong>Security:</strong> All uploads are logged for compliance. Do not upload unauthorized files.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client-side validation and drag-drop scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropzone = document.getElementById('dropzone');
+            const fileInput = document.getElementById('file');
+            const filePreview = document.getElementById('filePreview');
+            const previewName = document.getElementById('previewName');
+            const previewSize = document.getElementById('previewSize');
+            const previewIcon = document.getElementById('previewIcon');
+            const removeFileBtn = document.getElementById('removeFileBtn');
+            const uploadForm = document.getElementById('documentUploadForm');
+            const clientErrorAlert = document.getElementById('clientErrorAlert');
+            const clientErrorMessage = document.getElementById('clientErrorMessage');
+
+            const MAX_SIZE_MB = 10;
+            const ALLOWED_EXTENSIONS = ['.pdf', '.docx'];
+
+            // Trigger browse when clicking on dropzone (except the remove button or preview container)
+            dropzone.addEventListener('click', (e) => {
+                if (!filePreview.contains(e.target) && e.target !== removeFileBtn) {
+                    fileInput.click();
+                }
+            });
+
+            // Drag operations
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropzone.classList.add('dragover');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropzone.classList.remove('dragover');
+                }, false);
+            });
+
+            // Drop file
+            dropzone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    handleFileSelection(files[0]);
+                }
+            });
+
+            // Select file via dialog
+            fileInput.addEventListener('change', (e) => {
+                if (fileInput.files.length > 0) {
+                    handleFileSelection(fileInput.files[0]);
+                }
+            });
+
+            // Remove selected file
+            removeFileBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                resetFileSelection();
+            });
+
+            function showError(message) {
+                clientErrorMessage.textContent = message;
+                clientErrorAlert.classList.remove('d-none');
+            }
+
+            function clearError() {
+                clientErrorAlert.classList.add('d-none');
+            }
+
+            function handleFileSelection(file) {
+                clearError();
+                
+                // Validate extension
+                const fileName = file.name;
+                const extension = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+                if (!ALLOWED_EXTENSIONS.includes(extension)) {
+                    showError(`Unsupported file format. Only PDF and DOCX files are allowed.`);
+                    resetFileSelection();
+                    return;
+                }
+
+                // Validate size
+                const sizeInMB = file.size / (1024 * 1024);
+                if (sizeInMB > MAX_SIZE_MB) {
+                    showError(`File size is too large (${sizeInMB.toFixed(2)} MB). Maximum allowed size is ${MAX_SIZE_MB} MB.`);
+                    resetFileSelection();
+                    return;
+                }
+
+                // Update preview display
+                previewName.textContent = fileName;
+                previewSize.textContent = sizeInMB < 1 ? (file.size / 1024).toFixed(1) + ' KB' : sizeInMB.toFixed(2) + ' MB';
+                
+                // Set icons matching doc type
+                if (extension === '.pdf') {
+                    previewIcon.className = 'fa-solid fa-file-pdf fs-3 me-3 text-danger';
+                } else {
+                    previewIcon.className = 'fa-solid fa-file-word fs-3 me-3 text-primary';
+                }
+
+                filePreview.classList.remove('d-none');
+            }
+
+            function resetFileSelection() {
+                fileInput.value = '';
+                filePreview.classList.add('d-none');
+            }
+
+            // Extra validation on submit
+            uploadForm.addEventListener('submit', (e) => {
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    e.preventDefault();
+                    showError('Please select or drop a valid document file to upload.');
+                }
+            });
+        });
+    </script>
+</main>
+</html>
