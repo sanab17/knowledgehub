@@ -161,6 +161,48 @@ To support upcoming features without breaking the core codebase:
 
 ---
 
+## 🛡️ Production Security & Deployment Configuration
+
+For production deployments, the application enforces database credentials safety using the Spring Boot `prod` profile. 
+
+### 1. Spring Profiles (`default` vs. `prod`)
+- **Default Profile (`default`)**: Intended for local development. Standard database fallbacks (`postgres` password, localhost) are active, allowing easy onboarding.
+- **Production Profile (`prod`)**: Enforces strict security by disabling fallback values. The application **will fail to start** if database connection parameters are missing from the host environment.
+
+### 2. Running in Production
+
+#### Via Docker Compose (Recommended)
+Our production `docker-compose.yml` uses the `prod` profile and requires your environment to contain the DB secrets.
+1. Populate your `.env` with secure database parameters (avoid using `postgres` as username/password):
+   ```bash
+   DB_HOST=db
+   DB_PORT=5432
+   DB_NAME=your_secure_db_name
+   DB_USERNAME=your_secure_username
+   DB_PASSWORD=your_super_secret_password
+   ```
+2. Start the services:
+   ```bash
+   docker compose up --build -d
+   ```
+
+#### Via Maven / Direct Execution
+To run the production profile directly:
+1. Define the system environment variables:
+   ```bash
+   export DB_HOST=your-prod-db-host
+   export DB_PORT=5432
+   export DB_NAME=your_prod_db_name
+   export DB_USERNAME=your_prod_username
+   export DB_PASSWORD=your_prod_password
+   ```
+2. Launch the jar with the `prod` profile:
+   ```bash
+   java -jar -Dspring.profiles.active=prod target/knowledgehub-0.0.1-SNAPSHOT.jar
+   ```
+
+---
+
 ## 🔧 Troubleshooting & Common Issues
 
 ### 1. Web server failed to start: Port 8080 was already in use
