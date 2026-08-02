@@ -1,0 +1,72 @@
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.local
+.env.*.local
+
+# Keep the example configuration
+!.env.example
+
+
+# =========================
+# Maven
+# =========================
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+
+# =========================
+# IDE - IntelliJ IDEA
+# =========================
+.idea/
+*.iml
+*.iws
+*.ipr
+
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+
+
+# =========================
+# Eclipse
+# =========================
+.classpath
+.project
+.settings/
+
+
+# =========================
+# OS generated files
+# =========================
+.DS_Store
+Thumbs.db
+
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+
+# =========================
+# Java
+# =========================
+*.class
+hs_err_pid*
+
+
+# =========================
+# Spring Boot
+# =========================
+spring-boot-devtools.properties
+
+
+# =========================
+# Docker
+# =========================
+docker-compose.override.yml
