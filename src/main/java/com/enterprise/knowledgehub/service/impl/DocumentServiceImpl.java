@@ -13,6 +13,7 @@ import com.enterprise.knowledgehub.repository.DocumentRepository;
 import com.enterprise.knowledgehub.repository.UserRepository;
 import com.enterprise.knowledgehub.service.DocumentService;
 import com.enterprise.knowledgehub.service.StorageService;
+import com.enterprise.knowledgehub.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +27,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,6 +43,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
     private final StorageService storageService;
+    private final AuditLogService auditLogService;
 
     @Value("${app.upload.allowed-types}")
     private List<String> allowedTypes;
@@ -78,6 +79,8 @@ public class DocumentServiceImpl implements DocumentService {
         Document savedDoc = documentRepository.save(document);
         log.info("Document successfully uploaded. ID: {}, Title: '{}', Saved Filename: '{}', Owner: '{}'", 
                 savedDoc.getId(), savedDoc.getTitle(), savedDoc.getFilename(), username);
+
+        auditLogService.log("UPLOAD", savedDoc.getId(), savedDoc.getTitle(), username, "Document uploaded successfully");
 
         return mapToResponseDto(savedDoc);
     }
@@ -133,7 +136,7 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Resource downloadDocument(Long id, String username) {
         log.info("User '{}' requesting download for document ID: {}", username, id);
         Document document = documentRepository.findById(id)
@@ -141,6 +144,9 @@ public class DocumentServiceImpl implements DocumentService {
 
         Resource resource = storageService.loadAsResource(document.getFilename());
         log.info("Document downloaded successfully. ID: {}, Title: '{}', User: '{}'", id, document.getTitle(), username);
+
+        auditLogService.log("DOWNLOAD", id, document.getTitle(), username, "Document downloaded successfully");
+
         return resource;
     }
 
@@ -169,6 +175,8 @@ public class DocumentServiceImpl implements DocumentService {
 
         // Delete database record
         documentRepository.delete(document);
+
+        auditLogService.log("DELETE", id, document.getTitle(), username, "Document deleted by " + username);
 
         log.info("Document deleted successfully. ID: {}, Title: '{}', Requestor: '{}'", id, document.getTitle(), username);
     }

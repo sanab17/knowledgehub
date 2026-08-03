@@ -65,8 +65,32 @@ To perform these manual tests, ensure the local server or Docker container stack
 
 ---
 
-## 📈 Test Suite 5: Monitoring & Health Checks
+## 📋 Test Suite 5: Audit Trail Logs
+
+| Test ID | Description | Pre-conditions | Test Steps | Expected Result |
+| :--- | :--- | :--- | :--- | :--- |
+| **TC-AUD-01** | Access Audit Logs as Admin | Logged in as Admin User | 1. Observe sidebar navigation link "Audit Logs".<br/>2. Click link to navigate to `/admin/audit-logs`. | "Audit Logs" link is visible. Page loads successfully displaying a list of all user operations. |
+| **TC-AUD-02** | Access Audit Logs as Employee | Logged in as Employee User A | 1. Look for "Audit Logs" sidebar option.<br/>2. Manually enter `http://localhost:8080/admin/audit-logs` in the URL bar. | Sidebar link is hidden. Direct access results in HTTP 403 Forbidden (Access Denied error page). |
+| **TC-AUD-03** | Audit Entry on Upload | Logged in as Employee User A | 1. Upload a document named "Test Doc". | An audit log entry is written: Action=`UPLOAD`, Initiator=`employeea`, Document Title=`Test Doc`, Details=`Document uploaded successfully`. |
+| **TC-AUD-04** | Audit Entry on Download | Logged in as Employee User A | 1. Click download on a document named "Policy.pdf". | An audit log entry is written: Action=`DOWNLOAD`, Initiator=`employeea`, Document Title=`Policy.pdf`, Details=`Document downloaded successfully`. |
+| **TC-AUD-05** | Audit Entry on Deletion | Logged in as Employee User A | 1. Delete a document named "Temp.pdf" uploaded by Employee User A. | An audit log entry is written: Action=`DELETE`, Initiator=`employeea`, Document Title=`Temp.pdf`, Details=`Document deleted by employeea`. |
+| **TC-AUD-06** | Filter Audit Logs by Username | Logged in as Admin. Audit logs exist for multiple users. | 1. Enter "employeea" in the filter input field on `/admin/audit-logs`.<br/>2. Click "Filter Logs". | The table only displays log actions initiated by the username containing "employeea". |
+
+---
+
+## ⚙️ Test Suite 6: Profiles & Configurations
+
+| Test ID | Description | Pre-conditions | Test Steps | Expected Result |
+| :--- | :--- | :--- | :--- | :--- |
+| **TC-CONF-01** | Production Profile Fail-fast (Local Exec) | Target jar is compiled | 1. Clear system environment database variables (`DB_PASSWORD`, etc.).<br/>2. Start application: `java -jar -Dspring.profiles.active=prod target/*.jar` | Application fails to start, displaying configuration binding exception (missing database password). |
+| **TC-CONF-02** | Docker Compose Production Missing Secrets | In project root | 1. Delete `.env` file.<br/>2. Run `docker compose up -d`. | Docker Compose warning displays showing variables are unset, and database container initialization fails. |
+
+---
+
+## 📈 Test Suite 7: Monitoring & Global Error Handling
 
 | Test ID | Description | Pre-conditions | Test Steps | Expected Result |
 | :--- | :--- | :--- | :--- | :--- |
 | **TC-ACT-01** | Actuator Health Endpoint Check | Application is running | 1. Navigate directly to `http://localhost:8080/actuator/health` in browser. | JSON response is returned containing status: `{"status":"UP"}`. |
+| **TC-ERR-01** | Custom 404 Page Verification | Application is running | 1. Enter invalid URL (e.g. `http://localhost:8080/invalid-url-path`). | Custom error page renders with status `404`, title "Page Not Found", and a description indicating the resource doesn't exist. |
+| **TC-ERR-02** | Custom 403 Page Verification | Logged in as Employee User A | 1. Navigate to restricted endpoint: `http://localhost:8080/admin/audit-logs`. | Redirects to `/error?status=403` or goes to error view, rendering status `403`, title "Access Denied", and warning about missing administrator permissions. |

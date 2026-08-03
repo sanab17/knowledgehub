@@ -129,11 +129,11 @@ graph TD
 
 ### Layer Descriptions
 The project is structured with strict layering:
-- `com.enterprise.knowledgehub.model`: Entities (`User`, `Document`) and Enums (`Department`, `UserRole`)
-- `com.enterprise.knowledgehub.repository`: Repositories (`UserRepository`, `DocumentRepository` supporting JPA specifications)
+- `com.enterprise.knowledgehub.model`: Entities (`User`, `Document`, `AuditLog`) and Enums (`Department`, `UserRole`)
+- `com.enterprise.knowledgehub.repository`: Repositories (`UserRepository`, `DocumentRepository`, `AuditLogRepository` supporting JPA specifications)
 - `com.enterprise.knowledgehub.dto`: Unified request/response data transfer objects with validation constraints
-- `com.enterprise.knowledgehub.service`: Interfaces and implementations decoupling storage (`StorageService`), authorization, search filters, and statistics
-- `com.enterprise.knowledgehub.controller`: Clean MVC controllers for Auth, Dashboard, and Document management
+- `com.enterprise.knowledgehub.service`: Interfaces and implementations decoupling storage (`StorageService`), authorization, search filters, statistics, and auditing (`AuditLogService`)
+- `com.enterprise.knowledgehub.controller`: Clean MVC controllers for Auth, Dashboard, Document management, Admin audit trails (`AdminController`), and global error handling (`CustomErrorController`)
 - `com.enterprise.knowledgehub.exception`: Custom domain exceptions and a `GlobalExceptionHandler` mapping errors to beautiful views
 
 ---
@@ -151,6 +151,8 @@ Spring Boot Actuator health check is available at:
 - **Session Protection:** All routes except login/registration and public assets require an active HTTP Session.
 - **CSRF:** CSRF tokens are automatically managed and checked by Spring Security for post requests.
 - **Delete Authorization:** Enforced programmatically at the service layer preventing employees from deleting documents they do not own.
+- **Access Control Restriction:** `/admin/**` endpoints are restricted to the `ADMIN` role, returning HTTP 403 Forbidden to regular employees.
+- **Audit Trail Logging:** All core document operations (upload, download, deletion) are audited in a persistent database table (`audit_logs`) for compliance. Deletion audits preserve document titles in log records after data is deleted.
 
 ---
 

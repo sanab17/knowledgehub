@@ -41,6 +41,10 @@ public class SecurityConfig {
                     new AntPathRequestMatcher("/register"),
                     new AntPathRequestMatcher("/actuator/health")
                 ).permitAll()
+                // Protect admin endpoints
+                .requestMatchers(
+                    new AntPathRequestMatcher("/admin/**")
+                ).hasRole("ADMIN")
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
             )
