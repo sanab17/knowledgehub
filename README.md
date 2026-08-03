@@ -138,6 +138,15 @@ The project is structured with strict layering:
 
 ---
 
+## ⚡ Search Scalability & Indexing
+
+To handle searches across hundreds of thousands of files efficiently, the repository utilizes **PostgreSQL Trigram (pg_trgm) indexing**:
+- **Substring Wildcards**: Standard B-Tree indexes cannot accelerate queries with leading wildcards (such as `LIKE '%security%'`).
+- **GIN Trigram Indexes**: We utilize GIN (Generalized Inverted Index) with `gin_trgm_ops` on the document's `title` and `filename` fields.
+- **Performance**: This decreases search lookup times from linear table scans ($O(N)$) to index lookups ($O(\log N)$), ensuring fast searches over high-volume databases.
+
+---
+
 
 
 ## 📈 Monitoring & Health Check
