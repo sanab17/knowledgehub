@@ -17,6 +17,20 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:RELEASE.2024-04-18T19-09-19Z
+    container_name: knowledgehub-minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - miniodata:/data
+
   app:
     build:
       context: .
@@ -34,12 +48,21 @@ services:
       - UPLOAD_DIR=/app/uploads
       - SERVER_PORT=8080
       - SPRING_PROFILES_ACTIVE=prod
+      - STORAGE_PROVIDER=${STORAGE_PROVIDER:-s3}
+      - AWS_S3_ENDPOINT=http://minio:9000
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-minioadmin}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-minioadmin}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-knowledgehub}
     depends_on:
       db:
         condition: service_healthy
+      minio:
+        condition: service_started
     volumes:
       - uploads:/app/uploads
 
 volumes:
   pgdata:
   uploads:
+  miniodata:

@@ -32,6 +32,17 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
+  cloud:
+    aws:
+      s3:
+        endpoint: ${AWS_S3_ENDPOINT:}
+        path-style-access-enabled: true
+      region:
+        static: ${AWS_REGION:us-east-1}
+      credentials:
+        access-key: ${AWS_ACCESS_KEY_ID:}
+        secret-key: ${AWS_SECRET_ACCESS_KEY:}
+
 # Server configuration
 server:
   port: ${SERVER_PORT:8080}
@@ -55,3 +66,7 @@ app:
     dir: ${UPLOAD_DIR:uploads}
     allowed-types: "application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     max-size-bytes: 10485760 # 10MB in bytes
+  storage:
+    provider: ${STORAGE_PROVIDER:local}
+    s3:
+      bucket: ${AWS_S3_BUCKET:knowledgehub-uploads}

@@ -7,9 +7,9 @@ The application is built following clean architecture, Spring Boot 3 best practi
 ---
 
 ## 🛠 Tech Stack
-- **Backend:** Java 21, Spring Boot 3.3.x, Spring Security (Form Login, BCrypt hashing), Spring Data JPA, Hibernate, PostgreSQL, Flyway, Maven, Actuator
+- **Backend:** Java 21, Spring Boot 3.3.x, Spring Security, Spring Data JPA, Hibernate, PostgreSQL, Flyway, Spring Cloud AWS (S3), Maven, Actuator
 - **Frontend:** Thymeleaf, Bootstrap 5, FontAwesome (UI Icons)
-- **Deployment:** Docker, Docker Compose
+- **Deployment:** Docker, Docker Compose, MinIO (Local S3-compatible Object Storage)
 
 ---
 
@@ -108,6 +108,7 @@ graph TD
     subgraph Data ["Data & Storage Layer"]
         DB[("🛢️ PostgreSQL Database<br/>(Flyway Migrations)")]:::external
         FS[("📁 Local Storage<br/>(uploads/ directory)")]:::external
+        S3[("☁️ S3 Object Storage<br/>(AWS S3 / MinIO)")]:::external
     end
 
     %% Interactions
@@ -115,8 +116,9 @@ graph TD
     Security ==>|Dispatches to| Controllers
     Controllers -.->|Binds & Validates| DTO
     Controllers ==>|Invokes Business Services| Services
-    DocServiceImpl ==>|Saves/Reads Binary Data| LocalStorage
-    LocalStorage ==>|File Read/Write| FS
+    DocServiceImpl ==>|Saves/Reads Binary Data| StorageService
+    StorageService ==>|local provider| FS
+    StorageService ==>|s3 provider| S3
     DocServiceImpl ==>|Queries/Mutates Data| DocRepo
     UserServiceImpl ==>|Queries/Mutates Data| UserRepo
     UserRepo ==>|ORM Mapping| UserEnt
@@ -167,7 +169,7 @@ Spring Boot Actuator health check is available at:
 
 ## 🔮 Future Architecture & Modular Design
 To support upcoming features without breaking the core codebase:
-1. **Cloud File Storage:** Decoupled through the `StorageService` interface. Implement `S3StorageService` to transition from local file storage to AWS S3.
+1. **Cloud File Storage (Completed):** Fully integrated via `S3StorageService` implementing the pluggable `StorageService` interface. Easily switch between `local` disk and `s3` (AWS / MinIO) using environment variables.
 2. **AI, Virus Scanning & Email Services:** Hooked into Spring's Event System. An event listener can listen to `DocumentUploadedEvent` to process files in the background, run AI summary extractions, index vectors for RAG, execute virus scans, and trigger email alerts.
 
 ---
@@ -183,19 +185,31 @@ For production deployments, the application enforces database credentials safety
 ### 2. Running in Production
 
 #### Via Docker Compose (Recommended)
-Our production `docker-compose.yml` uses the `prod` profile and requires your environment to contain the DB secrets.
-1. Populate your `.env` with secure database parameters (avoid using `postgres` as username/password):
+Our production `docker-compose.yml` starts PostgreSQL, MinIO, and the Web Portal, configuring the `prod` profile.
+1. Populate your `.env` with secure database parameters and S3 credentials:
    ```bash
+   # Database
    DB_HOST=db
    DB_PORT=5432
    DB_NAME=your_secure_db_name
    DB_USERNAME=your_secure_username
    DB_PASSWORD=your_super_secret_password
+
+   # Storage Provider Toggle (local OR s3)
+   STORAGE_PROVIDER=s3
+
+   # S3 / MinIO Configuration
+   AWS_S3_ENDPOINT=http://minio:9000
+   AWS_REGION=us-east-1
+   AWS_ACCESS_KEY_ID=minioadmin
+   AWS_SECRET_ACCESS_KEY=minioadmin
+   AWS_S3_BUCKET=knowledgehub
    ```
 2. Start the services:
    ```bash
    docker compose up --build -d
    ```
+3. To view the local MinIO object storage console, visit [http://localhost:9001](http://localhost:9001) in your browser.
 
 #### Via Maven / Direct Execution
 To run the production profile directly:
@@ -242,3 +256,7 @@ To run the production profile directly:
   ```bash
   open /Applications/Docker.app
   ```
+
+### 4. MinIO Object Storage connection errors (UnknownHostException)
+* **Cause:** The S3 client is attempting to resolve the bucket name as a DNS host header (e.g. `http://bucket.minio:9000`), which fails locally.
+* **Fix:** Ensure `path-style-access-enabled: true` is configured in your S3 client properties in `application.yml` (this forces URLs like `http://minio:9000/bucket` instead).
