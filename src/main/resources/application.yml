@@ -32,6 +32,11 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
+  session:
+    store-type: ${SPRING_SESSION_STORE_TYPE:jdbc}
+    jdbc:
+      initialize-schema: never
+
   cloud:
     aws:
       s3:

@@ -48,6 +48,7 @@ services:
       - UPLOAD_DIR=/app/uploads
       - SERVER_PORT=8080
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_SESSION_STORE_TYPE=${SPRING_SESSION_STORE_TYPE:-jdbc}
       - STORAGE_PROVIDER=${STORAGE_PROVIDER:-s3}
       - AWS_S3_ENDPOINT=http://minio:9000
       - AWS_REGION=${AWS_REGION:-us-east-1}

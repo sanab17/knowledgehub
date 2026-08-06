@@ -7,7 +7,7 @@ The application is built following clean architecture, Spring Boot 3 best practi
 ---
 
 ## 🛠 Tech Stack
-- **Backend:** Java 21, Spring Boot 3.3.x, Spring Security, Spring Data JPA, Hibernate, PostgreSQL, Flyway, Spring Cloud AWS (S3), Maven, Actuator
+- **Backend:** Java 21, Spring Boot 3.3.x, Spring Security, Spring Data JPA, Hibernate, PostgreSQL, Flyway, Spring Cloud AWS (S3), Spring Session JDBC, Maven, Actuator
 - **Frontend:** Thymeleaf, Bootstrap 5, FontAwesome (UI Icons)
 - **Deployment:** Docker, Docker Compose, MinIO (Local S3-compatible Object Storage)
 
@@ -194,6 +194,9 @@ Our production `docker-compose.yml` starts PostgreSQL, MinIO, and the Web Portal
    DB_NAME=your_secure_db_name
    DB_USERNAME=your_secure_username
    DB_PASSWORD=your_super_secret_password
+
+   # Session Management Toggle (jdbc OR none)
+   SPRING_SESSION_STORE_TYPE=jdbc
 
    # Storage Provider Toggle (local OR s3)
    STORAGE_PROVIDER=s3

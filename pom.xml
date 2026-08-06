@@ -39,6 +39,12 @@
             <artifactId>spring-cloud-aws-starter-s3</artifactId>
         </dependency>
 
+        <!-- Distributed Session Management -->
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-jdbc</artifactId>
+        </dependency>
+
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
