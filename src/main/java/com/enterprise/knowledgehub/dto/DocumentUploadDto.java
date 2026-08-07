@@ -5,12 +5,18 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.Builder;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Data Transfer Object containing document upload requests.
  */
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class DocumentUploadDto {
 
     @NotBlank(message = "Title is required")

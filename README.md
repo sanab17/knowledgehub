@@ -214,6 +214,18 @@ Our production `docker-compose.yml` starts PostgreSQL, MinIO, and the Web Portal
    ```
 3. To view the local MinIO object storage console, visit [http://localhost:9001](http://localhost:9001) in your browser.
 
+#### Multi-Instance Scaling & Load Balancing
+To simulate and verify a high-scale production load-balanced environment:
+1. An Nginx load balancer (`gateway`) is configured in the docker-compose stack to balance traffic across the application containers.
+2. Spin up the stack with multiple replica instances of the web application container:
+   ```bash
+   docker compose up --build --scale app=2 -d
+   ```
+3. Verify that both `app-1` and `app-2` are running using `docker ps`.
+4. Go to `http://localhost:8080` in your browser. Perform registration, login, document uploads, and downloads.
+5. The user session state remains active across requests to different replicas because it is persisted in the shared database, and files are available across all instances because they are uploaded to the shared MinIO container.
+6. Inspect the app container logs using `docker compose logs app` to observe both replicas processing traffic interchangeably.
+
 #### Via Maven / Direct Execution
 To run the production profile directly:
 1. Define the system environment variables:

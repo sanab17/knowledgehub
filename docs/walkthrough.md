@@ -74,3 +74,57 @@ You can watch the full automated browser verification session here:
 
 ### 📂 Automated Unit Testing
 * **[AuditLogServiceImplTest.java](src/test/java/com/enterprise/knowledgehub/service/impl/AuditLogServiceImplTest.java)**: Unit tests confirming logging behavior and empty/whitespace filter edge cases.
+
+---
+
+# Walkthrough - Added Cloud Object Storage (S3 / MinIO) & Distributed Session Store (Spring Session JDBC)
+
+This section tracks the implementation of S3/MinIO cloud storage, distributed PostgreSQL-backed session management, Nginx load balancer proxy gateway, and full JUnit test coverage.
+
+## Verification Results & Evidence
+
+### ☁️ Cloud Object Storage Verification (MinIO)
+We successfully integrated AWS S3/MinIO compatible object storage:
+* **Upload:** Uploaded files route to the `S3StorageService` which uploads the stream to MinIO. The physical file is written as a unique UUID-named object in the container volume `/data/knowledgehub`.
+* **Download/Delete:** Downloads retrieve the resource stream directly from the bucket, and deletion cleans up the S3 object key along with the DB metadata record.
+
+### 🔑 Distributed Session Storage Verification (Spring Session JDBC)
+We configured database-backed sessions to support scaling:
+* **Flyway Migration:** Schema tables (`SPRING_SESSION` and `SPRING_SESSION_ATTRIBUTES`) were created cleanly during startup via `V4__Spring_Session_Tables.sql`.
+* **Database Persisted Sessions:** Checked the active sessions directly in PostgreSQL post-login:
+  ```text
+   principal_name |  expiry_time  
+  ----------------+---------------
+   employee1      | 1785977669857
+  (1 row)
+  ```
+
+### ⚖️ Load-Balanced Multi-Instance Scaling
+To verify real-world clustering, we added an Nginx reverse proxy load balancer (`gateway`) to the docker-compose stack and scaled the web application replicas:
+* **Scaled Up Command:** `docker compose up --build --scale app=2 -d`
+* **Proof of Alternating Node Processing:** Checked the native container logs of both instances to verify traffic splitting under the same authentication session cookie:
+  * **Node 1 (`knowledgehub-app-1`)** processed the login request.
+  * **Node 2 (`knowledgehub-app-2`)** processed the document upload request (persisted PDF to S3/MinIO).
+  * **Node 1 (`knowledgehub-app-1`)** processed the document download request (retrieved PDF from S3/MinIO).
+  * **Node 2 (`knowledgehub-app-2`)** processed the document delete request.
+
+## Changes Made
+
+### 📂 Build & Configurations
+* **[pom.xml](pom.xml)**: Added version properties and dependency starter imports for `spring-cloud-aws-starter-s3` and `spring-session-jdbc`.
+* **[application.yml](src/main/resources/application.yml)**: Configured properties for Spring Cloud AWS credentials, region, endpoint, path-style access, and pluggable Spring Session store-type overrides.
+* **[docker-compose.yml](docker-compose.yml)**: Removed container names and port bindings from `app` service to support scaling, added Nginx gateway mapping host port 8080 to Nginx port 80, and configured environment parameters.
+* **[nginx.conf](nginx.conf)**: Created Nginx upstream load-balancing rules balancing requests across `app:8080` services.
+* **[.env.example](.env.example)**: Added example environment variables for S3 endpoints, credentials, and session store toggles.
+
+### 📂 Service Layer & Database Migrations
+* **[V4__Spring_Session_Tables.sql](src/main/resources/db/migration/V4__Spring_Session_Tables.sql)**: Created Flyway migration schema for Spring Session PostgreSQL tables.
+* **[S3StorageService.java](src/main/java/com/enterprise/knowledgehub/service/impl/S3StorageService.java)**: Implemented S3 upload, resource download streams, object deletions, and bucket initialization logic.
+* **[LocalStorageService.java](src/main/java/com/enterprise/knowledgehub/service/impl/LocalStorageService.java)**: Conditioned local storage bean to only load when S3 is disabled (`app.storage.provider=local`).
+* **[SecurityConfig.java](src/main/java/com/enterprise/knowledgehub/config/SecurityConfig.java)**: Configured logout filter to clear both `JSESSIONID` and `SESSION` cookies.
+
+### 📂 Automated Test Suites
+* **[LocalStorageServiceTest.java](src/test/java/com/enterprise/knowledgehub/service/impl/LocalStorageServiceTest.java)**: JUnit 5 unit tests validating local file store, resource loading, empty checks, and deletions using `@TempDir`.
+* **[S3StorageServiceTest.java](src/test/java/com/enterprise/knowledgehub/service/impl/S3StorageServiceTest.java)**: JUnit 5 unit tests verifying bucket init, store, download stream, and key deletions using Mockito.
+* **[DocumentServiceImplTest.java](src/test/java/com/enterprise/knowledgehub/service/impl/DocumentServiceImplTest.java)**: JUnit 5 unit tests verifying document size validations, invalid file extension rejections, and role-based delete validations.
+* **[DocumentUploadDto.java](src/main/java/com/enterprise/knowledgehub/dto/DocumentUploadDto.java)**: Added Lombok `@Builder` and constructors.
