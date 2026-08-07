@@ -128,6 +128,7 @@ class DocumentServiceImplTest {
         });
         verify(storageService, never()).store(any());
         verify(documentRepository, never()).save(any());
+        verify(auditLogService, times(1)).log(eq("UPLOAD"), any(), eq("Annual HR Policy"), eq("employee1"), anyString(), eq("FAILURE"));
     }
 
     @Test
@@ -143,6 +144,7 @@ class DocumentServiceImplTest {
             documentService.uploadDocument(uploadDto, "employee1");
         });
         verify(storageService, never()).store(any());
+        verify(auditLogService, times(1)).log(eq("UPLOAD"), any(), eq("Annual HR Policy"), eq("employee1"), anyString(), eq("FAILURE"));
     }
 
     @Test
@@ -232,6 +234,6 @@ class DocumentServiceImplTest {
         });
         verify(storageService, never()).delete(anyString());
         verify(documentRepository, never()).delete(any(Document.class));
-        verify(auditLogService, never()).log(any(), any(), any(), any(), any());
+        verify(auditLogService, times(1)).log(eq("DELETE"), eq(100L), eq("Owned By TestUser"), eq("another"), anyString(), eq("FAILURE"));
     }
 }

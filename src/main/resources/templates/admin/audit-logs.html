@@ -58,6 +58,9 @@
                         </th>
                         <th>Document ID</th>
                         <th>Document Title</th>
+                        <th>IP Address</th>
+                        <th>Browser</th>
+                        <th>Status</th>
                         <th>Details</th>
                     </tr>
                 </thead>
@@ -78,10 +81,16 @@
                         <td class="text-white fw-medium" th:text="${log.username}">username</td>
                         <td class="text-secondary" th:text="${log.documentId != null ? log.documentId : 'N/A'}">Doc ID</td>
                         <td class="text-white" th:text="${log.documentTitle}">Document Title</td>
+                        <td class="text-white small" th:text="${log.ipAddress}">IP</td>
+                        <td class="text-secondary small" th:title="${log.userAgent}" th:text="${log.getBrowserName()}">Browser</td>
+                        <td>
+                            <span th:if="${log.result == 'SUCCESS'}" class="badge bg-success" style="font-size: 0.7rem;">SUCCESS</span>
+                            <span th:if="${log.result == 'FAILURE'}" class="badge bg-danger" style="font-size: 0.7rem;">FAILURE</span>
+                        </td>
                         <td class="text-secondary small" th:text="${log.details}">Action Details</td>
                     </tr>
                     <tr th:if="${logsPage.isEmpty()}">
-                        <td colspan="6" class="text-center py-5 text-secondary">
+                        <td colspan="9" class="text-center py-5 text-secondary">
                             <i class="fa-solid fa-list-check fs-1 mb-3 d-block text-muted-opacity"></i>
                             No audit logs found.
                         </td>

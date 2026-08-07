@@ -60,7 +60,12 @@ public class DocumentServiceImpl implements DocumentService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
 
         MultipartFile file = uploadDto.getFile();
-        validateFile(file);
+        try {
+            validateFile(file);
+        } catch (InvalidFileException e) {
+            auditLogService.log("UPLOAD", null, uploadDto.getTitle().trim(), username, "Upload failed: " + e.getMessage(), "FAILURE");
+            throw e;
+        }
 
         // Store file physically
         String savedFilename = storageService.store(file);
@@ -167,6 +172,7 @@ public class DocumentServiceImpl implements DocumentService {
 
         if (!isOwner && !isAdmin) {
             log.warn("Access Denied: User '{}' is not authorized to delete document ID: {}", username, id);
+            auditLogService.log("DELETE", id, document.getTitle(), username, "Unauthorized delete attempt blocked", "FAILURE");
             throw new UnauthorizedException("You are not authorized to delete this document.");
         }
 

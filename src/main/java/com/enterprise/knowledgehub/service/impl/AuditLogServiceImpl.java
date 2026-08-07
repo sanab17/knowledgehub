@@ -9,6 +9,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
+
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.List;
 
@@ -23,16 +28,49 @@ public class AuditLogServiceImpl implements AuditLogService {
     private final AuditLogRepository auditLogRepository;
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void log(String action, Long documentId, String documentTitle, String username, String details) {
-        log.info("Auditing action '{}' on document '{}' (ID: {}) by user '{}'", action, documentTitle, documentId, username);
+        log(action, documentId, documentTitle, username, details, "SUCCESS");
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void log(String action, Long documentId, String documentTitle, String username, String details, String result) {
+        log.info("Auditing action '{}' (result: {}) on document '{}' (ID: {}) by user '{}'", action, result, documentTitle, documentId, username);
         
+        String ipAddress = "UNKNOWN";
+        String userAgent = "UNKNOWN";
+
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes != null) {
+            HttpServletRequest request = attributes.getRequest();
+            
+            // Extract IP (check X-Forwarded-For header for load balancer proxy routing)
+            ipAddress = request.getHeader("X-Forwarded-For");
+            if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+                ipAddress = request.getRemoteAddr();
+            } else {
+                int commaIndex = ipAddress.indexOf(',');
+                if (commaIndex != -1) {
+                    ipAddress = ipAddress.substring(0, commaIndex).trim();
+                }
+            }
+
+            userAgent = request.getHeader("User-Agent");
+            if (userAgent != null && userAgent.length() > 500) {
+                userAgent = userAgent.substring(0, 497) + "...";
+            }
+        }
+
         AuditLog auditLog = AuditLog.builder()
                 .action(action)
                 .documentId(documentId)
                 .documentTitle(documentTitle)
                 .username(username)
                 .details(details)
+                .ipAddress(ipAddress)
+                .userAgent(userAgent)
+                .result(result)
                 .build();
                 
         auditLogRepository.save(auditLog);

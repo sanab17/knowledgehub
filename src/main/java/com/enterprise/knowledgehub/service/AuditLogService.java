@@ -16,6 +16,11 @@ public interface AuditLogService {
     void log(String action, Long documentId, String documentTitle, String username, String details);
 
     /**
+     * Records a new audit log entry with success/failure status.
+     */
+    void log(String action, Long documentId, String documentTitle, String username, String details, String result);
+
+    /**
      * Retrieves all audit logs with pagination and search term filtering.
      */
     Page<AuditLog> getAllLogs(String username, Pageable pageable);

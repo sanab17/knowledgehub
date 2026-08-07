@@ -39,8 +39,37 @@ public class AuditLog {
     @Column(length = 255)
     private String details;
 
+    @Column(name = "ip_address", length = 45)
+    private String ipAddress;
+
+    @Column(name = "user_agent", length = 500)
+    private String userAgent;
+
+    @Column(length = 20)
+    private String result;
+
     @PrePersist
     protected void onCreate() {
         this.timestamp = LocalDateTime.now();
+    }
+
+    public String getBrowserName() {
+        if (userAgent == null || userAgent.trim().isEmpty() || userAgent.equals("UNKNOWN")) {
+            return "UNKNOWN";
+        }
+        String ua = userAgent.toLowerCase();
+        if (ua.contains("chrome") || ua.contains("crios")) return "Chrome";
+        if (ua.contains("firefox") || ua.contains("fxios")) return "Firefox";
+        if (ua.contains("safari") && !ua.contains("chrome") && !ua.contains("android")) return "Safari";
+        if (ua.contains("edge") || ua.contains("edg")) return "Edge";
+        if (ua.contains("msie") || ua.contains("trident")) return "Internet Explorer";
+        if (ua.contains("python") || ua.contains("urllib")) return "Python / CLI";
+        if (ua.contains("curl")) return "Curl / CLI";
+        if (ua.contains("postman")) return "Postman / Tool";
+        
+        if (userAgent.length() > 20) {
+            return userAgent.substring(0, 17) + "...";
+        }
+        return userAgent;
     }
 }

@@ -226,6 +226,12 @@ To simulate and verify a high-scale production load-balanced environment:
 5. The user session state remains active across requests to different replicas because it is persisted in the shared database, and files are available across all instances because they are uploaded to the shared MinIO container.
 6. Inspect the app container logs using `docker compose logs app` to observe both replicas processing traffic interchangeably.
 
+#### Compliance Auditing & Forensic Logging
+To support security compliance in scaled, multi-session environments:
+- **IP Address Forwarding:** Programmatically inspects the incoming request context. If routed through Nginx proxy load balancer, it resolves client IP via `X-Forwarded-For` header.
+- **Client User-Agent Mapping:** Saves the raw HTTP user agent and displays a human-readable browser label (e.g. `Chrome`, `Safari`, `Firefox`, `Python / CLI`) in the admin logs dashboard. Full agent strings are shown on hover tooltips.
+- **Transaction Rollback Resiliency:** Implements `Propagation.REQUIRES_NEW` on auditing logs. Operations that fail validation checks or throw access-control exception (e.g., unauthorized document deletion blocks) are still committed to the `audit_logs` table with a `FAILURE` status.
+
 #### Via Maven / Direct Execution
 To run the production profile directly:
 1. Define the system environment variables:

@@ -117,4 +117,34 @@ class AuditLogServiceImplTest {
         assertNotNull(result);
         verify(auditLogRepository, times(1)).findTop10ByOrderByTimestampDesc();
     }
+
+    @Test
+    void log_WithHttpRequestContext_SavesRequestDetails() {
+        // Arrange
+        jakarta.servlet.http.HttpServletRequest request = mock(jakarta.servlet.http.HttpServletRequest.class);
+        when(request.getHeader("X-Forwarded-For")).thenReturn("192.168.1.10, 10.0.0.1");
+        when(request.getHeader("User-Agent")).thenReturn("Mozilla/5.0 Chrome/120.0.0");
+        
+        org.springframework.web.context.request.ServletRequestAttributes attributes = 
+                new org.springframework.web.context.request.ServletRequestAttributes(request);
+        org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(attributes);
+
+        try {
+            // Act
+            auditLogService.log("UPLOAD", 1L, "Document.pdf", "testuser", "Uploaded file", "SUCCESS");
+
+            // Assert
+            org.mockito.ArgumentCaptor<AuditLog> captor = org.mockito.ArgumentCaptor.forClass(AuditLog.class);
+            verify(auditLogRepository, times(1)).save(captor.capture());
+            AuditLog savedLog = captor.getValue();
+            
+            assertNotNull(savedLog);
+            assertEquals("192.168.1.10", savedLog.getIpAddress());
+            assertEquals("Mozilla/5.0 Chrome/120.0.0", savedLog.getUserAgent());
+            assertEquals("SUCCESS", savedLog.getResult());
+            assertEquals("Chrome", savedLog.getBrowserName());
+        } finally {
+            org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
+        }
+    }
 }
