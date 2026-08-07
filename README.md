@@ -73,14 +73,16 @@ graph TD
     classDef client fill:#fff8e1,stroke:#f57f17,stroke-width:1px;
 
     Client["🌐 Client (Browser)<br/>Thymeleaf & Bootstrap 5"]:::client
+    Gateway["⚖️ Nginx Load Balancer Gateway<br/>(Gateway Proxy on Port 8080)"]:::external
 
-    subgraph App ["KnowledgeHub Core Application"]
-        Security["🔒 Spring Security Layer<br/>Session Management, BCrypt, CSRF"]:::security
+    subgraph App ["KnowledgeHub Clustered Application Replicas (app-1 / app-2)"]
+        Security["🔒 Spring Security Layer<br/>Distributed Session Management (JDBC), CSRF"]:::security
         
         subgraph Controllers ["Controller Layer (MVC)"]
             AuthCtrl["AuthController"]:::layer
             DashCtrl["DashboardController"]:::layer
             DocCtrl["DocumentController"]:::layer
+            AdminCtrl["AdminController"]:::layer
         end
 
         subgraph DTOs ["DTO & Exception Layer"]
@@ -91,39 +93,49 @@ graph TD
         subgraph Services ["Service Layer (Business Logic)"]
             UserServiceImpl["UserServiceImpl"]:::layer
             DocServiceImpl["DocumentServiceImpl"]:::layer
+            AuditLogServiceImpl["AuditLogServiceImpl"]:::layer
             LocalStorage["LocalStorageService"]:::layer
+            S3Storage["S3StorageService"]:::layer
         end
 
         subgraph Repositories ["Repository Layer (JPA)"]
             UserRepo["UserRepository"]:::layer
             DocRepo["DocumentRepository"]:::layer
+            AuditLogRepo["AuditLogRepository"]:::layer
         end
 
         subgraph Models ["Model Layer (Entities)"]
             UserEnt["User Entity"]:::layer
             DocEnt["Document Entity"]:::layer
+            AuditLogEnt["AuditLog Entity"]:::layer
         end
     end
 
     subgraph Data ["Data & Storage Layer"]
-        DB[("🛢️ PostgreSQL Database<br/>(Flyway Migrations)")]:::external
+        DB[("🛢️ PostgreSQL Database<br/>(Flyway Migrations & Spring Session Tables)")]:::external
         FS[("📁 Local Storage<br/>(uploads/ directory)")]:::external
-        S3[("☁️ S3 Object Storage<br/>(AWS S3 / MinIO)")]:::external
+        S3[("☁️ S3 Object Storage<br/>(AWS S3 / MinIO Container Volume)")]:::external
     end
 
     %% Interactions
-    Client ==>|HTTP Requests| Security
+    Client ==>|HTTP Requests| Gateway
+    Gateway ==>|Round-Robin Proxy Traffic| Security
     Security ==>|Dispatches to| Controllers
     Controllers -.->|Binds & Validates| DTO
     Controllers ==>|Invokes Business Services| Services
-    DocServiceImpl ==>|Saves/Reads Binary Data| StorageService
-    StorageService ==>|local provider| FS
-    StorageService ==>|s3 provider| S3
+    DocServiceImpl ==>|Saves/Reads Compliance Logs| AuditLogServiceImpl
+    DocServiceImpl ==>|Delegates file persistence| LocalStorage
+    DocServiceImpl ==>|Delegates file persistence| S3Storage
+    LocalStorage ==>|local provider| FS
+    S3Storage ==>|s3 provider| S3
     DocServiceImpl ==>|Queries/Mutates Data| DocRepo
     UserServiceImpl ==>|Queries/Mutates Data| UserRepo
+    AuditLogServiceImpl ==>|Queries/Mutates Data| AuditLogRepo
     UserRepo ==>|ORM Mapping| UserEnt
     DocRepo ==>|ORM Mapping| DocEnt
-    UserEnt & DocEnt ==>|Read/Write| DB
+    AuditLogRepo ==>|ORM Mapping| AuditLogEnt
+    UserEnt & DocEnt & AuditLogEnt ==>|Read/Write| DB
+    Security -.->|Read/Write Session Rows| DB
 
     %% Direct links / error handling
     Controllers -.->|Intercepts exceptions| GlobalExc
