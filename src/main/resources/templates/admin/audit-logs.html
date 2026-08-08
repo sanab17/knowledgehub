@@ -1,0 +1,135 @@
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout :: layout(~{::main})}">
+<main class="animate-fade-in-up">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-white mb-1">System Audit Trail</h1>
+            <p class="text-secondary mb-0">Review compliance, file operations, and user activity records.</p>
+        </div>
+    </div>
+
+    <!-- Filter & Search Panel -->
+    <div class="glass-card p-4 mb-4">
+        <form th:action="@{/admin/audit-logs}" method="get" class="row g-3 align-items-end">
+            <!-- Search Username -->
+            <div class="col-md-6">
+                <label for="searchUsername" class="form-label text-secondary small fw-medium">Initiator Username</label>
+                <input type="text" id="searchUsername" name="username" th:value="${searchUsername}" class="form-control form-control-custom" placeholder="Filter by username...">
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="col-md-6 d-flex gap-2">
+                <button type="submit" class="btn btn-primary-gradient flex-grow-1">
+                    <i class="fa-solid fa-magnifying-glass me-1"></i> Filter Logs
+                </button>
+                <a th:href="@{/admin/audit-logs}" class="btn btn-outline-custom">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table List -->
+    <div class="glass-card p-4">
+        <div class="table-responsive">
+            <table class="table table-custom">
+                <thead>
+                    <tr>
+                        <th>
+                            <a class="text-secondary text-decoration-none d-flex align-items-center gap-1"
+                               th:href="@{/admin/audit-logs(username=${searchUsername}, page=0, sortBy='timestamp', direction=${sortBy == 'timestamp' and direction == 'asc' ? 'desc' : 'asc'})}">
+                                Timestamp 
+                                <i class="fa-solid" th:classappend="${sortBy == 'timestamp' ? (direction == 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort text-muted-opacity'}"></i>
+                            </a>
+                        </th>
+                        <th>
+                            <a class="text-secondary text-decoration-none d-flex align-items-center gap-1"
+                               th:href="@{/admin/audit-logs(username=${searchUsername}, page=0, sortBy='action', direction=${sortBy == 'action' and direction == 'asc' ? 'desc' : 'asc'})}">
+                                Action
+                                <i class="fa-solid" th:classappend="${sortBy == 'action' ? (direction == 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort text-muted-opacity'}"></i>
+                            </a>
+                        </th>
+                        <th>
+                            <a class="text-secondary text-decoration-none d-flex align-items-center gap-1"
+                               th:href="@{/admin/audit-logs(username=${searchUsername}, page=0, sortBy='username', direction=${sortBy == 'username' and direction == 'asc' ? 'desc' : 'asc'})}">
+                                Initiator
+                                <i class="fa-solid" th:classappend="${sortBy == 'username' ? (direction == 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort text-muted-opacity'}"></i>
+                            </a>
+                        </th>
+                        <th>Document ID</th>
+                        <th>Document Title</th>
+                        <th>IP Address</th>
+                        <th>Browser</th>
+                        <th>Status</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="log : ${logsPage.content}">
+                        <td class="text-white" th:text="${#temporals.format(log.timestamp, 'yyyy-MM-dd HH:mm:ss')}">Timestamp</td>
+                        <td>
+                            <span th:if="${log.action == 'UPLOAD'}" class="badge bg-success" style="font-size: 0.75rem;">
+                                <i class="fa-solid fa-cloud-arrow-up me-1"></i>UPLOAD
+                            </span>
+                            <span th:if="${log.action == 'DOWNLOAD'}" class="badge bg-info" style="font-size: 0.75rem;">
+                                <i class="fa-solid fa-download me-1"></i>DOWNLOAD
+                            </span>
+                            <span th:if="${log.action == 'DELETE'}" class="badge bg-danger" style="font-size: 0.75rem;">
+                                <i class="fa-solid fa-trash-can me-1"></i>DELETE
+                            </span>
+                        </td>
+                        <td class="text-white fw-medium" th:text="${log.username}">username</td>
+                        <td class="text-secondary" th:text="${log.documentId != null ? log.documentId : 'N/A'}">Doc ID</td>
+                        <td class="text-white" th:text="${log.documentTitle}">Document Title</td>
+                        <td class="text-white small" th:text="${log.ipAddress}">IP</td>
+                        <td class="text-secondary small" th:title="${log.userAgent}" th:text="${log.getBrowserName()}">Browser</td>
+                        <td>
+                            <span th:if="${log.result == 'SUCCESS'}" class="badge bg-success" style="font-size: 0.7rem;">SUCCESS</span>
+                            <span th:if="${log.result == 'FAILURE'}" class="badge bg-danger" style="font-size: 0.7rem;">FAILURE</span>
+                        </td>
+                        <td class="text-secondary small" th:text="${log.details}">Action Details</td>
+                    </tr>
+                    <tr th:if="${logsPage.isEmpty()}">
+                        <td colspan="9" class="text-center py-5 text-secondary">
+                            <i class="fa-solid fa-list-check fs-1 mb-3 d-block text-muted-opacity"></i>
+                            No audit logs found.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="d-flex justify-content-between align-items-center mt-4" th:if="${logsPage.totalPages > 1}">
+            <span class="text-secondary small">
+                Showing page <strong th:text="${logsPage.number + 1}">1</strong> of <strong th:text="${logsPage.totalPages}">10</strong> 
+                (Total <span th:text="${logsPage.totalElements}">100</span> logs)
+            </span>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-custom mb-0">
+                    <!-- Previous Page -->
+                    <li class="page-item" th:classappend="${logsPage.hasPrevious() ? '' : 'disabled'}">
+                        <a class="page-link" th:href="@{/admin/audit-logs(username=${searchUsername}, page=${logsPage.number - 1}, sortBy=${sortBy}, direction=${direction})}">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </a>
+                    </li>
+
+                    <!-- Page Numbers -->
+                    <li class="page-item" th:each="pageNum : ${#numbers.sequence(0, logsPage.totalPages - 1)}"
+                        th:classappend="${pageNum == logsPage.number ? 'active' : ''}">
+                        <a class="page-link" th:href="@{/admin/audit-logs(username=${searchUsername}, page=${pageNum}, sortBy=${sortBy}, direction=${direction})}" 
+                           th:text="${pageNum + 1}">1</a>
+                    </li>
+
+                    <!-- Next Page -->
+                    <li class="page-item" th:classappend="${logsPage.hasNext() ? '' : 'disabled'}">
+                        <a class="page-link" th:href="@{/admin/audit-logs(username=${searchUsername}, page=${logsPage.number + 1}, sortBy=${sortBy}, direction=${direction})}">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</main>
+</html>

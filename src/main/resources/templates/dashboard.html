@@ -1,0 +1,182 @@
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::main})}">
+<main class="animate-fade-in-up">
+    <!-- Welcome Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-white mb-1">Company Dashboard</h1>
+            <p class="text-secondary mb-0">Welcome back, <span class="text-white fw-medium" th:text="${username}">User</span>. Monitor documents, stats, and portal activities.</p>
+        </div>
+        <div>
+            <a th:href="@{/documents/upload}" class="btn btn-primary-gradient">
+                <i class="fa-solid fa-plus me-1"></i> Upload Document
+            </a>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-4 mb-4">
+        <!-- Card 1: Total Documents -->
+        <div class="col-md-6 col-lg-3">
+            <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-secondary small fw-medium uppercase mb-1">Total Portal Documents</p>
+                        <h2 class="text-white fw-bold mb-0" th:text="${totalDocuments}">1,248</h2>
+                    </div>
+                    <div class="stat-indicator" style="background-color: rgba(99, 102, 241, 0.15);">
+                        <i class="fa-solid fa-file-invoice text-gradient fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a th:href="@{/documents}" class="text-gradient fw-medium text-decoration-none small">
+                        View all <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: User Documents -->
+        <div class="col-md-6 col-lg-3">
+            <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-secondary small fw-medium uppercase mb-1">My Uploaded Files</p>
+                        <h2 class="text-white fw-bold mb-0" th:text="${myDocuments}">42</h2>
+                    </div>
+                    <div class="stat-indicator" style="background-color: rgba(6, 182, 212, 0.15);">
+                        <i class="fa-solid fa-cloud-arrow-up text-gradient fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a th:href="@{/documents(ownerUsername=${username})}" class="text-gradient fw-medium text-decoration-none small">
+                        View my documents <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Department Count -->
+        <div class="col-md-6 col-lg-3">
+            <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-secondary small fw-medium uppercase mb-1">Predefined Departments</p>
+                        <h2 class="text-white fw-bold mb-0">5</h2>
+                    </div>
+                    <div class="stat-indicator" style="background-color: rgba(16, 185, 129, 0.15);">
+                        <i class="fa-solid fa-sitemap text-gradient fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="text-secondary small">HR, Eng, Fin, Legal, Ops</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Actuator Status -->
+        <div class="col-md-6 col-lg-3">
+            <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-secondary small fw-medium uppercase mb-1">System Health</p>
+                        <h2 class="text-white fw-bold mb-0 text-success">Healthy</h2>
+                    </div>
+                    <div class="stat-indicator" style="background-color: rgba(16, 185, 129, 0.15);">
+                        <i class="fa-solid fa-heart-pulse text-success fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a th:href="@{/actuator/health}" target="_blank" class="text-secondary text-decoration-none small">
+                        Actuator health endpoint <i class="fa-solid fa-external-link-alt ms-1 text-secondary"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Recent Uploads Table -->
+        <div class="col-lg-8">
+            <div class="glass-card p-4 h-100">
+                <h4 class="fw-semibold text-white mb-3"><i class="fa-solid fa-clock-rotate-left me-2 text-gradient"></i>Recently Uploaded</h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Department</th>
+                                <th>Owner</th>
+                                <th>Date</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="doc : ${recentDocuments}">
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i th:class="${doc.contentType == 'application/pdf' ? 'fa-solid fa-file-pdf text-danger fs-5 me-2' : 'fa-solid fa-file-word text-primary fs-5 me-2'}"></i>
+                                        <div>
+                                            <span class="text-white fw-medium d-block" th:text="${doc.title}">Doc Title</span>
+                                            <span class="text-secondary small" th:text="${doc.filename}">filename.pdf</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge-department" th:text="${doc.department}">ENGINEERING</span>
+                                </td>
+                                <td class="text-secondary" th:text="${doc.ownerUsername}">owner</td>
+                                <td class="text-secondary" th:text="${#temporals.format(doc.uploadDate, 'yyyy-MM-dd HH:mm')}">Date</td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-2">
+                                        <a th:href="@{/documents/{id}(id=${doc.id})}" class="btn btn-sm btn-outline-custom p-1 px-2" title="View Details">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </a>
+                                        <a th:href="@{/documents/download/{id}(id=${doc.id})}" class="btn btn-sm btn-primary-gradient p-1 px-2" title="Download">
+                                            <i class="fa-solid fa-download"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(recentDocuments)}">
+                                <td colspan="5" class="text-center py-4 text-secondary">
+                                    <i class="fa-solid fa-folder-open fs-2 mb-2 d-block"></i>
+                                    No documents uploaded yet.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Department Document Distribution -->
+        <div class="col-lg-4">
+            <div class="glass-card p-4 h-100">
+                <h4 class="fw-semibold text-white mb-3"><i class="fa-solid fa-pie-chart me-2 text-gradient"></i>Department Breakdown</h4>
+                
+                <div class="d-flex flex-column gap-3 mt-4">
+                    <!-- Progress bars representing distribution dynamically -->
+                    <div th:each="entry : ${departmentStats}">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-secondary fw-medium" th:text="${entry.key}">Department</span>
+                            <span class="text-white fw-bold" th:text="${entry.value} + ' file(s)'">0 files</span>
+                        </div>
+                        <div class="progress" style="height: 6px; background-color: rgba(255, 255, 255, 0.05); border-radius: 3px;">
+                            <!-- Compute dynamic progress bars width, standardizing to a max of 20 documents if count is low for visual bar -->
+                            <div class="progress-bar" role="progressbar" 
+                                 th:style="'width: ' + (${totalDocuments > 0 ? (entry.value * 100 / totalDocuments) : 0}) + '%'"
+                                 th:classappend="${entry.key == 'ENGINEERING' ? 'bg-primary' : 
+                                                 (entry.key == 'HR' ? 'bg-info' : 
+                                                 (entry.key == 'FINANCE' ? 'bg-success' : 
+                                                 (entry.key == 'LEGAL' ? 'bg-danger' : 'bg-warning')))}"
+                                 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</html>
