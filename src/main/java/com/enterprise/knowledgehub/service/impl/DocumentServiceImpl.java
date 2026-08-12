@@ -25,6 +25,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.jdbc.core.JdbcTemplate;
+import com.enterprise.knowledgehub.event.DocumentUploadedEvent;
 
 import java.util.HashMap;
 import java.util.List;
@@ -33,7 +36,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Service implementation for managing document lifecycle and enforcing security rules.
+ * Service implementation for managing document lifecycle and enforcing security
+ * rules.
  */
 @Service
 @RequiredArgsConstructor
@@ -44,6 +48,8 @@ public class DocumentServiceImpl implements DocumentService {
     private final UserRepository userRepository;
     private final StorageService storageService;
     private final AuditLogService auditLogService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final JdbcTemplate jdbcTemplate;
 
     @Value("${app.upload.allowed-types}")
     private List<String> allowedTypes;
@@ -63,7 +69,8 @@ public class DocumentServiceImpl implements DocumentService {
         try {
             validateFile(file);
         } catch (InvalidFileException e) {
-            auditLogService.log("UPLOAD", null, uploadDto.getTitle().trim(), username, "Upload failed: " + e.getMessage(), "FAILURE");
+            auditLogService.log("UPLOAD", null, uploadDto.getTitle().trim(), username,
+                    "Upload failed: " + e.getMessage(), "FAILURE");
             throw e;
         }
 
@@ -82,10 +89,14 @@ public class DocumentServiceImpl implements DocumentService {
                 .build();
 
         Document savedDoc = documentRepository.save(document);
-        log.info("Document successfully uploaded. ID: {}, Title: '{}', Saved Filename: '{}', Owner: '{}'", 
+        log.info("Document successfully uploaded. ID: {}, Title: '{}', Saved Filename: '{}', Owner: '{}'",
                 savedDoc.getId(), savedDoc.getTitle(), savedDoc.getFilename(), username);
 
-        auditLogService.log("UPLOAD", savedDoc.getId(), savedDoc.getTitle(), username, "Document uploaded successfully");
+        auditLogService.log("UPLOAD", savedDoc.getId(), savedDoc.getTitle(), username,
+                "Document uploaded successfully");
+
+        // Trigger asynchronous RAG text ingestion & vectorization
+        eventPublisher.publishEvent(new DocumentUploadedEvent(this, savedDoc.getId(), savedDoc.getFilename()));
 
         return mapToResponseDto(savedDoc);
     }
@@ -110,20 +121,24 @@ public class DocumentServiceImpl implements DocumentService {
         // Validate size
         if (file.getSize() > maxSizeBytes) {
             log.error("File upload rejected. File size {} exceeds limit of {} bytes", file.getSize(), maxSizeBytes);
-            throw new InvalidFileException("File exceeds maximum allowed size of " + (maxSizeBytes / (1024 * 1024)) + "MB");
+            throw new InvalidFileException(
+                    "File exceeds maximum allowed size of " + (maxSizeBytes / (1024 * 1024)) + "MB");
         }
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<DocumentResponseDto> searchDocuments(String title, String filename, Department department, Pageable pageable) {
+    public Page<DocumentResponseDto> searchDocuments(String title, String filename, Department department,
+            Pageable pageable) {
         Specification<Document> spec = Specification.where(null);
 
         if (title != null && !title.trim().isEmpty()) {
-            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("title")), "%" + title.trim().toLowerCase() + "%"));
+            spec = spec.and(
+                    (root, query, cb) -> cb.like(cb.lower(root.get("title")), "%" + title.trim().toLowerCase() + "%"));
         }
         if (filename != null && !filename.trim().isEmpty()) {
-            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("filename")), "%" + filename.trim().toLowerCase() + "%"));
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("filename")),
+                    "%" + filename.trim().toLowerCase() + "%"));
         }
         if (department != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("department"), department));
@@ -148,7 +163,8 @@ public class DocumentServiceImpl implements DocumentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Document not found with ID: " + id));
 
         Resource resource = storageService.loadAsResource(document.getFilename());
-        log.info("Document downloaded successfully. ID: {}, Title: '{}', User: '{}'", id, document.getTitle(), username);
+        log.info("Document downloaded successfully. ID: {}, Title: '{}', User: '{}'", id, document.getTitle(),
+                username);
 
         auditLogService.log("DOWNLOAD", id, document.getTitle(), username, "Document downloaded successfully");
 
@@ -172,19 +188,30 @@ public class DocumentServiceImpl implements DocumentService {
 
         if (!isOwner && !isAdmin) {
             log.warn("Access Denied: User '{}' is not authorized to delete document ID: {}", username, id);
-            auditLogService.log("DELETE", id, document.getTitle(), username, "Unauthorized delete attempt blocked", "FAILURE");
+            auditLogService.log("DELETE", id, document.getTitle(), username, "Unauthorized delete attempt blocked",
+                    "FAILURE");
             throw new UnauthorizedException("You are not authorized to delete this document.");
         }
 
         // Delete physical file
         storageService.delete(document.getFilename());
 
+        // Delete vector embeddings from vector store
+        try {
+            int deletedChunks = jdbcTemplate
+                    .update("DELETE FROM vector_store WHERE (metadata->>'documentId')::bigint = ?", id);
+            log.info("Pruned {} vector chunks from vector_store for document ID: {}", deletedChunks, id);
+        } catch (Exception e) {
+            log.warn("Could not delete vector chunks for document ID: {}. Error: {}", id, e.getMessage());
+        }
+
         // Delete database record
         documentRepository.delete(document);
 
         auditLogService.log("DELETE", id, document.getTitle(), username, "Document deleted by " + username);
 
-        log.info("Document deleted successfully. ID: {}, Title: '{}', Requestor: '{}'", id, document.getTitle(), username);
+        log.info("Document deleted successfully. ID: {}, Title: '{}', Requestor: '{}'", id, document.getTitle(),
+                username);
     }
 
     @Override

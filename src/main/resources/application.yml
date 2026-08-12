@@ -48,6 +48,11 @@ spring:
         access-key: ${AWS_ACCESS_KEY_ID:}
         secret-key: ${AWS_SECRET_ACCESS_KEY:}
 
+  # AI settings
+  ai:
+    openai:
+      api-key: ${SPRING_AI_OPENAI_API_KEY:dummy-key-for-local-runs-must-be-replaced-in-prod}
+
 # Server configuration
 server:
   port: ${SERVER_PORT:8080}

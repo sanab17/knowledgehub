@@ -46,6 +46,12 @@ class DocumentServiceImplTest {
     @Mock
     private AuditLogService auditLogService;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
     @InjectMocks
     private DocumentServiceImpl documentService;
 

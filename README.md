@@ -219,6 +219,9 @@ Our production `docker-compose.yml` starts PostgreSQL, MinIO, and the Web Portal
    AWS_ACCESS_KEY_ID=minioadmin
    AWS_SECRET_ACCESS_KEY=minioadmin
    AWS_S3_BUCKET=knowledgehub
+
+   # RAG Settings (Spring AI)
+   SPRING_AI_OPENAI_API_KEY=your_secure_openai_api_key
    ```
 2. Start the services:
    ```bash
@@ -243,6 +246,12 @@ To support security compliance in scaled, multi-session environments:
 - **IP Address Forwarding:** Programmatically inspects the incoming request context. If routed through Nginx proxy load balancer, it resolves client IP via `X-Forwarded-For` header.
 - **Client User-Agent Mapping:** Saves the raw HTTP user agent and displays a human-readable browser label (e.g. `Chrome`, `Safari`, `Firefox`, `Python / CLI`) in the admin logs dashboard. Full agent strings are shown on hover tooltips.
 - **Transaction Rollback Resiliency:** Implements `Propagation.REQUIRES_NEW` on auditing logs. Operations that fail validation checks or throw access-control exception (e.g., unauthorized document deletion blocks) are still committed to the `audit_logs` table with a `FAILURE` status.
+
+#### AI Chat Assistant (RAG Integration)
+To enable natural language chat search across uploaded PDF and DOCX files:
+- **Asynchronous Ingestion Pipeline:** Document uploads trigger a `@Async` thread parsing raw text contents (via Apache PDFBox/POI), splitting paragraphs into tokenized chunks, and indexing their vector embeddings.
+- **pgvector Store:** Saves vector embeddings in the PostgreSQL `vector_store` table using cosine similarity indices (`HNSW`), avoiding the complexity of external vector databases.
+- **Server-Sent Event (SSE) Streaming:** Streams response tokens from the OpenAI model to the browser chat interface, with full security escaping and layout formatting.
 
 #### Via Maven / Direct Execution
 To run the production profile directly:
