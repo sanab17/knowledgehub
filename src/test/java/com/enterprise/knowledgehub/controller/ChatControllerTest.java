@@ -1,5 +1,6 @@
 package com.enterprise.knowledgehub.controller;
 
+import com.enterprise.knowledgehub.service.RagRetrievalService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -7,7 +8,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.vectorstore.VectorStore;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -26,7 +26,7 @@ public class ChatControllerTest {
     private ChatModel chatModel;
 
     @MockBean
-    private VectorStore vectorStore;
+    private RagRetrievalService ragRetrievalService;
 
     @Test
     @WithMockUser(username = "employee1", roles = "EMPLOYEE")
@@ -42,3 +42,4 @@ public class ChatControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 }
+

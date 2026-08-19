@@ -192,6 +192,7 @@ class DocumentServiceImplTest {
 
         // Assert
         verify(storageService, times(1)).delete("delete-uuid.pdf");
+        verify(jdbcTemplate, times(1)).update(contains("DELETE FROM vector_store"), eq(100L));
         verify(documentRepository, times(1)).delete(doc);
         verify(auditLogService, times(1)).log(eq("DELETE"), eq(100L), eq("Delete Me"), eq("employee1"), anyString());
     }
@@ -213,6 +214,7 @@ class DocumentServiceImplTest {
 
         // Assert
         verify(storageService, times(1)).delete("delete-uuid.pdf");
+        verify(jdbcTemplate, times(1)).update(contains("DELETE FROM vector_store"), eq(100L));
         verify(documentRepository, times(1)).delete(doc);
         verify(auditLogService, times(1)).log(eq("DELETE"), eq(100L), eq("Delete Me"), eq("admin"), anyString());
     }

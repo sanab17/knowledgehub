@@ -136,3 +136,14 @@ To perform these manual tests, ensure the local server or Docker container stack
 | **TC-COMP-02** | Browser Name & Tooltip | Logged in. | 1. Go to Audit Logs. View `Browser` column. | The column renders a clean, human-readable browser name (e.g. `Chrome`, `Safari`). Hovering over the name displays a tooltip showing the full raw `User-Agent` string. |
 | **TC-COMP-03** | FAILURE Status Log | Logged in as Employee. | 1. Attempt to upload a restricted file (e.g. `.txt`).<br/>2. View validation error.<br/>3. Navigate to Audit Logs as Admin. | A log entry with action `UPLOAD` is written showing Status `FAILURE`, Details containing the validation error message, and client IP/browser. |
 | **TC-COMP-04** | Transaction Rollback Resiliency | Logged in as Employee. | 1. Repeat TC-COMP-03 (or try to delete unowned file). | The `FAILURE` audit log entry is saved to the database successfully even though the enclosing business transaction was rolled back (thanks to `Propagation.REQUIRES_NEW`). |
+
+---
+
+## 🤖 Test Suite 12: RAG AI Chat Assistant & Vector Store Re-indexing
+
+| Test ID | Description | Pre-conditions | Test Steps | Expected Result |
+| :--- | :--- | :--- | :--- | :--- |
+| **TC-RAG-01** | AI Chat Assistant with Vector Retrieval | Active documents exist and have been indexed. | 1. Log in and navigate to `/chat`.<br/>2. Input a question answered in the documents, e.g. "what is security context in the project?".<br/>3. Click Send and wait for the response. | Chatbot queries the vector store, retrieves relevant chunks, sends them to `gemini-3.5-flash`, and streams a correct, contextual answer. |
+| **TC-RAG-02** | RAG Chat Authorization Filter | Document belongs to Department A. User B is in Department B and does not have access. | 1. Log in as User B and navigate to `/chat`.<br/>2. Ask a question regarding the private document in Department A. | The similarity search filter `.withFilterExpression()` restricts access, preventing User B's search from retrieving chunks of that document. The assistant returns a safe fallback message. |
+| **TC-RAG-03** | Startup Vector Store Re-indexing | Documents exist in the database but `vector_store` contains 0 chunks (e.g. after dimension change). | 1. Start or restart the application server.<br/>2. Check container logs (`docker compose logs app`). | The startup reindexer identifies files with 0 vector chunks, fires `DocumentUploadedEvent` for them, and successfully vectorizes and stores them using `gemini-embedding-001`. |
+

@@ -50,8 +50,24 @@ spring:
 
   # AI settings
   ai:
-    openai:
-      api-key: ${SPRING_AI_OPENAI_API_KEY:dummy-key-for-local-runs-must-be-replaced-in-prod}
+    model:
+      chat: google-genai
+      embedding:
+        text: google-genai
+    google:
+      genai:
+        api-key: ${SPRING_AI_GEMINI_API_KEY:dummy-key-for-local-runs-must-be-replaced-in-prod}
+        project-id: ${SPRING_AI_GEMINI_PROJECT_ID:dummy-project-id}
+        chat:
+          options:
+            model: gemini-3.5-flash
+        embedding:
+          api-key: ${SPRING_AI_GEMINI_API_KEY:dummy-key-for-local-runs-must-be-replaced-in-prod}
+          project-id: ${SPRING_AI_GEMINI_PROJECT_ID:dummy-project-id}
+          text:
+            options:
+              model: gemini-embedding-001
+              dimensions: 768
 
 # Server configuration
 server:

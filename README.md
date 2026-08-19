@@ -221,7 +221,8 @@ Our production `docker-compose.yml` starts PostgreSQL, MinIO, and the Web Portal
    AWS_S3_BUCKET=knowledgehub
 
    # RAG Settings (Spring AI)
-   SPRING_AI_OPENAI_API_KEY=your_secure_openai_api_key
+   SPRING_AI_GEMINI_API_KEY=your_secure_gemini_api_key
+   SPRING_AI_GEMINI_PROJECT_ID=your_secure_gemini_project_id
    ```
 2. Start the services:
    ```bash
@@ -251,7 +252,9 @@ To support security compliance in scaled, multi-session environments:
 To enable natural language chat search across uploaded PDF and DOCX files:
 - **Asynchronous Ingestion Pipeline:** Document uploads trigger a `@Async` thread parsing raw text contents (via Apache PDFBox/POI), splitting paragraphs into tokenized chunks, and indexing their vector embeddings.
 - **pgvector Store:** Saves vector embeddings in the PostgreSQL `vector_store` table using cosine similarity indices (`HNSW`), avoiding the complexity of external vector databases.
-- **Server-Sent Event (SSE) Streaming:** Streams response tokens from the OpenAI model to the browser chat interface, with full security escaping and layout formatting.
+- **Server-Sent Event (SSE) Streaming:** Streams response tokens from the Google Gemini API (using the active `gemini-3.5-flash` model) to the browser chat interface, with full security escaping and layout formatting.
+- **Document-Level Authorization Filters:** The RAG pipeline is fully authorization-aware. Before similarity search is executed, user context rules (such as role-based, department-restricted, or owner-restricted permissions) are evaluated to build metadata filter expressions. These are applied directly to the vector store query using Spring AI's `.withFilterExpression()`, ensuring unauthorized document chunks never reach the LLM context.
+- **Secure Fallbacks:** If RAG retrieval returns zero matching chunks, the system bypasses the LLM call entirely and immediately returns a static fallback response, preventing context leakage and saving API token costs.
 
 #### Via Maven / Direct Execution
 To run the production profile directly:
