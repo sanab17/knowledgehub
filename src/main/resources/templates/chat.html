@@ -1,0 +1,223 @@
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::main})}">
+<main class="animate-fade-in-up">
+    <!-- Header -->
+    <div class="mb-4">
+        <h1 class="h2 fw-bold text-white mb-1">AI Chat Assistant</h1>
+        <p class="text-secondary mb-0">Ask questions and search semantically across all portal documents (RAG).</p>
+    </div>
+
+    <!-- Chat Interface Container -->
+    <div class="row">
+        <div class="col-lg-9 col-xl-8 mx-auto">
+            <div class="glass-card d-flex flex-column" style="height: 600px; border-radius: 12px; overflow: hidden;">
+                
+                <!-- Chat Window Header -->
+                <div class="p-3 border-bottom border-light border-opacity-10 d-flex align-items-center justify-content-between" style="background: rgba(255, 255, 255, 0.02);">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="indicator-active" style="width: 8px; height: 8px; border-radius: 50%; background-color: #10b981; box-shadow: 0 0 8px #10b981;"></div>
+                        <span class="text-white fw-medium small">KnowledgeHub RAG Engine Online</span>
+                    </div>
+                    <button id="clearChatBtn" class="btn btn-sm btn-outline-custom text-secondary border-0 small">
+                        <i class="fa-solid fa-trash-can me-1"></i> Clear Chat
+                    </button>
+                </div>
+
+                <!-- Chat History / Messages Area -->
+                <div id="chatMessages" class="flex-grow-1 p-4 overflow-y-auto d-flex flex-column gap-3" style="background: rgba(0, 0, 0, 0.15);">
+                    
+                    <!-- Bot Welcome Message -->
+                    <div class="d-flex gap-3 align-items-start max-width-75">
+                        <div class="avatar-bot d-flex align-items-center justify-content-center text-white" style="width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, #6366f1, #06b6d4);">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div class="bubble-bot p-3 rounded text-white" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 0 12px 12px 12px;">
+                            <p class="mb-0 small">Hello! I am your corporate virtual assistant. Ask me anything about HR policies, legal compliance, engineering manuals, or any documents uploaded to the portal. I will scan them semantically and answer your question.</p>
+                        </div>
+                    </div>
+                    
+                </div>
+
+                <!-- Input Controls Area -->
+                <div class="p-3 border-top border-light border-opacity-10" style="background: rgba(255, 255, 255, 0.02);">
+                    <form id="chatForm" class="d-flex gap-2 mb-0" onsubmit="event.preventDefault(); sendChatMessage();">
+                        <input type="text" id="chatInput" class="form-control bg-dark border-light border-opacity-10 text-white p-3" 
+                               placeholder="Type your question here (e.g. What is the document deletion policy?)..." 
+                               style="border-radius: 8px;" autocomplete="off" required>
+                        <button type="submit" id="sendBtn" class="btn btn-primary-gradient px-4" style="border-radius: 8px;">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Specific Script -->
+    <script th:inline="javascript">
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const clearChatBtn = document.getElementById('clearChatBtn');
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function createAvatar(type) {
+            const avatar = document.createElement('div');
+            avatar.className = `d-flex align-items-center justify-content-center text-white`;
+            avatar.style.width = '36px';
+            avatar.style.height = '36px';
+            avatar.style.borderRadius = '8px';
+            avatar.style.flexShrink = '0';
+            
+            if (type === 'user') {
+                avatar.style.background = 'rgba(255, 255, 255, 0.1)';
+                avatar.innerHTML = '<i class="fa-solid fa-user"></i>';
+            } else {
+                avatar.style.background = 'linear-gradient(135deg, #6366f1, #06b6d4)';
+                avatar.innerHTML = '<i class="fa-solid fa-robot"></i>';
+            }
+            return avatar;
+        }
+
+        function appendUserMessage(text) {
+            const container = document.createElement('div');
+            container.className = 'd-flex gap-3 align-items-start max-width-75 align-self-end flex-row-reverse';
+
+            const avatar = createAvatar('user');
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble-user p-3 rounded text-white small';
+            bubble.style.background = 'rgba(99, 102, 241, 0.15)';
+            bubble.style.border = '1px solid rgba(99, 102, 241, 0.3)';
+            bubble.style.borderRadius = '12px 0 12px 12px';
+            bubble.textContent = text;
+
+            container.appendChild(avatar);
+            container.appendChild(bubble);
+            chatMessages.appendChild(container);
+            scrollToBottom();
+        }
+
+        function appendBotMessagePlaceholder() {
+            const container = document.createElement('div');
+            container.className = 'd-flex gap-3 align-items-start max-width-75';
+
+            const avatar = createAvatar('bot');
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble-bot p-3 rounded text-white small';
+            bubble.style.background = 'rgba(255, 255, 255, 0.05)';
+            bubble.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+            bubble.style.borderRadius = '0 12px 12px 12px';
+            bubble.style.minWidth = '100px';
+
+            // Loading dots
+            bubble.innerHTML = '<div class="typing-loader"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
+
+            container.appendChild(avatar);
+            container.appendChild(bubble);
+            chatMessages.appendChild(container);
+            scrollToBottom();
+
+            return { container, bubble };
+        }
+
+        function sendChatMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            // 1. Clear input & disable buttons during transaction
+            chatInput.value = '';
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+
+            // 2. Render user bubble
+            appendUserMessage(text);
+
+            // 3. Render bot loading bubble
+            const botPlaceholder = appendBotMessagePlaceholder();
+            let isFirstChunk = true;
+
+            // 4. Construct event stream reader
+            const url = '/api/chat/stream?message=' + encodeURIComponent(text);
+            const eventSource = new EventSource(url);
+
+            eventSource.onmessage = function(event) {
+                // Remove loader on first chunk received
+                if (isFirstChunk) {
+                    botPlaceholder.bubble.innerHTML = '';
+                    isFirstChunk = false;
+                }
+                
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data && data.content) {
+                        botPlaceholder.bubble.textContent += data.content;
+                    }
+                } catch (e) {
+                    console.error("Failed to parse SSE JSON chunk:", e);
+                }
+                
+                scrollToBottom();
+            };
+
+            eventSource.onerror = function(err) {
+                eventSource.close();
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                chatInput.focus();
+                
+                // If nothing was ever written (or connection failed)
+                if (isFirstChunk) {
+                    botPlaceholder.bubble.innerHTML = 'Error: Failed to fetch answer from AI model. Please verify that your LLM credentials or server connection is active.';
+                    botPlaceholder.bubble.classList.add('text-danger');
+                }
+            };
+        }
+
+        clearChatBtn.addEventListener('click', () => {
+            chatMessages.innerHTML = `
+                <div class="d-flex gap-3 align-items-start max-width-75">
+                    <div class="avatar-bot d-flex align-items-center justify-content-center text-white" style="width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, #6366f1, #06b6d4);">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bubble-bot p-3 rounded text-white" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 0 12px 12px 12px;">
+                        <p class="mb-0 small">Chat history cleared. How can I help you today?</p>
+                    </div>
+                </div>
+            `;
+        });
+    </script>
+
+    <!-- Specific styles for typing indicators and bubble width restriction -->
+    <style>
+        .bubble-bot, .bubble-user {
+            white-space: pre-wrap;
+        }
+        .max-width-75 {
+            max-width: 75%;
+        }
+        .typing-loader {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 0;
+        }
+        .typing-loader .dot {
+            width: 8px;
+            height: 8px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-loader .dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-loader .dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+    </style>
+</main>
+</html>

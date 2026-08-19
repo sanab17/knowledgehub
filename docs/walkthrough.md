@@ -128,3 +128,43 @@ To verify real-world clustering, we added an Nginx reverse proxy load balancer (
 * **[S3StorageServiceTest.java](src/test/java/com/enterprise/knowledgehub/service/impl/S3StorageServiceTest.java)**: JUnit 5 unit tests verifying bucket init, store, download stream, and key deletions using Mockito.
 * **[DocumentServiceImplTest.java](src/test/java/com/enterprise/knowledgehub/service/impl/DocumentServiceImplTest.java)**: JUnit 5 unit tests verifying document size validations, invalid file extension rejections, and role-based delete validations.
 * **[DocumentUploadDto.java](src/main/java/com/enterprise/knowledgehub/dto/DocumentUploadDto.java)**: Added Lombok `@Builder` and constructors.
+
+---
+
+# Walkthrough - Added Document-Level Authorization for RAG Retrieval
+
+This section tracks the implementation of document-level authorization constraints in the RAG retrieval pipeline.
+
+## Verification Results & Evidence
+
+### 🔒 Security & Authorization Controls
+- **Admin Access:** Administrators are permitted to query all vectorized content without metadata restrictions.
+- **Default Employee Access:** Authenticated employees can search all documents by default, preserving current business rules.
+- **Department & Owner Access:** Future-proof metadata filters are generated and evaluated BEFORE queries hit the vector database. We verified that restricted queries construct the correct filters (e.g. `department == 'HR'` or `owner == 'employee1'`) and apply them as part of the retrieval process via Spring AI's `.withFilterExpression()`.
+- **Empty Results Fallback:** If RAG retrieval returns zero results, the system bypasses the LLM call entirely and immediately yields the static message `"I cannot find this information in the portal documents."`.
+
+### 🧪 Automated Test Verification
+All **38 tests** passed cleanly, including the new unit and integration tests inside `RagRetrievalServiceImplTest`:
+```
+[INFO] Running com.enterprise.knowledgehub.service.impl.RagRetrievalServiceImplTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.058 s -- in com.enterprise.knowledgehub.service.impl.RagRetrievalServiceImplTest
+[INFO] Results:
+[INFO] Tests run: 38, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+```
+
+---
+
+## Changes Made
+
+### 📂 Security & Authorization
+- **[RagAuthorizationService.java](src/main/java/com/enterprise/knowledgehub/security/RagAuthorizationService.java)**: Evaluates user context (role, department, owner, specific document list) and generates corresponding Spring AI filter expression strings.
+
+### 📂 Service Layer & Business Integration
+- **[RagRetrievalService.java](src/main/java/com/enterprise/knowledgehub/service/RagRetrievalService.java)** & **[RagRetrievalServiceImpl.java](src/main/java/com/enterprise/knowledgehub/service/impl/RagRetrievalServiceImpl.java)**: Defines and implements the RAG retrieval logic, applying the authorization filter expression to the similarity search request.
+- **[ChatController.java](src/main/java/com/enterprise/knowledgehub/controller/ChatController.java)**: Integrates `RagRetrievalService` in place of raw `VectorStore`, maps `@AuthenticationPrincipal UserDetails` to inputs, and handles the zero-matching-chunks scenario.
+
+### 📂 Automated Testing
+- **[RagRetrievalServiceImplTest.java](src/test/java/com/enterprise/knowledgehub/service/impl/RagRetrievalServiceImplTest.java)**: Contains JUnit tests verifying unrestricted admin search, unrestricted employee search, department restrictions, owner restrictions, document ID list filters, and anonymous/nonexistent user rejection.
+- **[DocumentServiceImplTest.java](src/test/java/com/enterprise/knowledgehub/service/impl/DocumentServiceImplTest.java)**: Updated delete tests to assert that database vector pruning is executed upon document deletion.
+- **[ChatControllerTest.java](src/test/java/com/enterprise/knowledgehub/controller/ChatControllerTest.java)**: Updated MockBeans to reference the new `RagRetrievalService`.
